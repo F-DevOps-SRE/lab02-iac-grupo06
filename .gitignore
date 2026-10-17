@@ -10,7 +10,7 @@ terraform.tfvars
 .pulumi/
 venve/
 .venv/
-_pycache_/
+__pycache__/
 *.pyc
 
 # Sistema operativo / Logs
