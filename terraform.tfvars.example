@@ -1,0 +1,4 @@
+group_id = "grupo01"
+environment = "dev"
+host_port = 8080
+nginx_version = "1.27-alpine"
