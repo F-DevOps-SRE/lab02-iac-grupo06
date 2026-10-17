@@ -1,0 +1,6 @@
+name: lab02-iac-pulumi
+runtime:
+  name: python
+  options:
+    virtualenv: venv
+description: Laboratorio 02 IaC - Docker Local con Pulumi en Python
