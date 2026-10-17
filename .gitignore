@@ -1,0 +1,19 @@
+# Terraform Local
+*.tfstate
+*.tfstate.*
+.terraform/
+.terraform.lock.hcl
+crash.log
+terraform.tfvars
+
+# Pulumi Local
+.pulumi/
+venve/
+.venv/
+_pycache_/
+*.pyc
+
+# Sistema operativo / Logs
+*.log
+.DS_Store
+Thumbs.db
