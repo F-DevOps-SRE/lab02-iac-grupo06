@@ -9,6 +9,7 @@ terraform.tfvars
 # Pulumi Local
 .pulumi/
 venve/
+venv/
 .venv/
 __pycache__/
 *.pyc
