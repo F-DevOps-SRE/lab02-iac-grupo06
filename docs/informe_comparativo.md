@@ -224,22 +224,21 @@ Resources:
 
 ```text
 $ cd terraform && terraform destroy -auto-approve
-...
-Destroy complete! Resources: 3 destroyed.
-
-$ cd ../pulumi && pulumi destroy --yes
-...
-Resources:
-    - 4 deleted
-
-$ docker ps -a --filter "name=servidor-web"
-CONTAINER ID   IMAGE     COMMAND   CREATED   STATUS    PORTS     NAMES
-
-$ docker network ls --filter "name=servidor-web"
-NETWORK ID     NAME      DRIVER    SCOPE
 ```
 
+![TerraformDestroy](terraformDestroy.png)
+
+```
+$ cd ../pulumi && pulumi destroy --yes
+```
+
+![pulumiDestroy](pulumiDestroy.png)
+
+
+
 Ninguna de las dos herramientas dejó contenedores ni redes huérfanas. La imagen `nginx:1.27-alpine` permanece en el host porque ambas la declaran con `keep_locally = true`, lo cual es intencional para no volver a descargarla. Pulumi reporta 4 recursos porque cuenta el recurso `pulumi:pulumi:Stack`.
+
+![contenedores](contenedores.png)
 
 ---
 
