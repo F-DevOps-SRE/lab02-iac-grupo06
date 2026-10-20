@@ -2,9 +2,9 @@ name: IaC Shift-Left CI (Terraform & Pulumi Local)
 
 on:
   pull_request:
-    branches: [ main ]
+    branches: ["main"]
   push:
-    branches: [ main ]
+    branches: ["main"]
 
 jobs:
   validate-terraform:
