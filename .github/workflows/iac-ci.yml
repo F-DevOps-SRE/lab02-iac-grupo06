@@ -1,0 +1,56 @@
+name: IaC Shift-Left CI (Terraform & Pulumi Local)
+
+on:
+  pull_request:
+    branches: ["main"]
+  push:
+    branches: ["main"]
+
+jobs:
+  validate-terraform:
+    name: Terraform Quality Gate
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: terraform
+    steps:
+      - name: Checkout del repositorio
+        uses: actions/checkout@v4
+  
+      - name: Instalar Terraform CLI
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.8.0
+  
+      - name: Verificar Formato Canónico (terraform fmt)
+        run: terraform fmt -check -diff
+  
+      - name: Inicializar Providers sin Backend Remoto
+        run: terraform init -backend=false
+  
+      - name: Validar Sintaxis y Tipos (terraform validate)
+        run: terraform validate
+
+  validate-pulumi:
+      name: Pulumi Quality Gate (Python)
+      runs-on: ubuntu-latest
+      defaults:
+        run:
+          working-directory: pulumi
+      steps:
+        - name: Checkout del repositorio
+          uses: actions/checkout@v4
+        
+        - name: Instalar Python
+          uses: actions/setup-python@v5
+          with:
+            python-version: '3.11'
+  
+        - name: Instalar Linters (Ruff y Flake8)
+          run: pip install ruff flake8
+  
+        - name: Análisis Estático con Ruff
+          run: ruff check .
+  
+        - name: Detección de Errores de Sintaxis con Flake8
+          run: flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
