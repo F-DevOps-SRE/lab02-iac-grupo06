@@ -7,6 +7,8 @@
 
 **Curso:** Fundamentos de DevOps y SRE – UNAL 2026-01 · **Laboratorio 02**
 
+**Link del Repositorio:** https://github.com/F-DevOps-SRE/lab02-iac-grupo06 
+
 **Arquitectura implementada (idéntica en ambas herramientas):** red Docker dedicada + imagen `nginx:1.27-alpine` + contenedor Nginx publicado en `127.0.0.1` (Terraform en `:8080`, Pulumi en `:8090`), con *labels* `managed-by`, `owner` y `tool` y variables de entorno `APP_ENV`, `MANAGED_BY` y `GROUP_ID`.
 
 ---
@@ -64,149 +66,15 @@ containers = [
 
 ## 2. Evidencias del Experimento de Drift
 
-**Procedimiento:** con ambos stacks desplegados, R3 eliminó cada contenedor directamente en Docker (sin pasar por la herramienta de IaC), y R1 y R2 ejecutaron el comando de detección correspondiente.
-
-> ✏️ **Reemplazar** los bloques siguientes por la salida real capturada en la terminal durante la sesión (los IDs y *hashes* serán distintos). La estructura mostrada corresponde a la que generan Terraform 1.x con `kreuzwerker/docker ~> 3.0.2` y Pulumi 3.x con `pulumi-docker 4.x` para este código.
+**Procedimiento:** Se hizo todo el proceso local en la maquina de trabajo de cada integrante.
 
 ### 2.1 Terraform
 
-**Paso 1 – Estado antes del drift:**
-
-```text
-$ docker ps --filter "label=managed-by=terraform" --format "table {{.Names}}\t{{.Ports}}\t{{.Status}}"
-NAMES                     PORTS                    STATUS
-servidor-web-grupo06-tf   127.0.0.1:8080->80/tcp   Up 4 minutes
-```
-
-**Paso 2 – Borrado manual (R3):**
-
-```text
-$ docker rm -f servidor-web-grupo06-tf
-servidor-web-grupo06-tf
-```
-
-**Paso 3 – Detección (R1):**
-
-```text
-$ terraform plan
-docker_network.app_network: Refreshing state... [id=<network_id>]
-docker_image.nginx: Refreshing state... [id=sha256:<image_hash>nginx:1.27-alpine]
-docker_container.web: Refreshing state... [id=<container_id>]
-
-Note: Objects have changed outside of Terraform
-
-Terraform detected the following changes made outside of Terraform since the
-last "terraform apply" which may have affected this plan:
-
-  # docker_container.web has been deleted
-  - resource "docker_container" "web" {
-      - id    = "<container_id>" -> null
-        name  = "servidor-web-grupo06-tf"
-        # (N unchanged attributes hidden)
-    }
-
-Unless you have made equivalent changes to your configuration, or ignored the
-relevant attributes using ignore_changes, the following plan may include
-actions to undo or respond to these changes.
-
-─────────────────────────────────────────────────────────────────────────────
-
-Terraform used the selected providers to generate the following execution
-plan. Resource actions are indicated with the following symbols:
-  + create
-
-Terraform will perform the following actions:
-
-  # docker_container.web will be created
-  + resource "docker_container" "web" {
-      + env      = [
-          + "APP_ENV=dev",
-          + "GROUP_ID=grupo06",
-          + "MANAGED_BY=terraform",
-        ]
-      + id       = (known after apply)
-      + image    = "sha256:<image_hash>"
-      + name     = "servidor-web-grupo06-tf"
-      ...
-      + ports {
-          + external = 8080
-          + internal = 80
-          + ip       = "127.0.0.1"
-          + protocol = "tcp"
-        }
-    }
-
-Plan: 1 to add, 0 to change, 0 to destroy.
-```
-
-**Paso 4 – Reconciliación:**
-
-```text
-$ terraform apply -auto-approve
-...
-docker_container.web: Creating...
-docker_container.web: Creation complete after 1s [id=<nuevo_container_id>]
-
-Apply complete! Resources: 1 added, 0 changed, 0 destroyed.
-```
-
-**Interpretación:** `terraform plan` ejecuta un *refresh* implícito: consulta la API de Docker por cada recurso del `tfstate`, encuentra que el contenedor ya no existe, lo marca como borrado fuera de Terraform y planea recrearlo. La red y la imagen no aparecen en el plan porque siguen coincidiendo con el código.
+![driftTerraform](driftTerraform.png)
 
 ### 2.2 Pulumi
 
-**Paso 1 – Borrado manual (R3):**
-
-```text
-$ docker rm -f servidor-web-grupo01-pulumi
-servidor-web-grupo01-pulumi
-```
-
-> El nombre usa `grupo01` porque es el `groupId` configurado actualmente en `Pulumi.dev.yaml`.
-
-**Paso 2 – Preview sin refresh (control):**
-
-```text
-$ pulumi preview
-Previewing update (dev):
-     Type                         Name                  Plan
-     pulumi:pulumi:Stack          lab02-iac-pulumi-dev
-
-Resources:
-    4 unchanged
-```
-
-**Paso 3 – Detección con refresh (R2):**
-
-```text
-$ pulumi preview --refresh
-Previewing update (dev):
-     Type                         Name                  Plan       Info
-     pulumi:pulumi:Stack          lab02-iac-pulumi-dev
-     ├─ docker:index:Network      network-grupo01
-     ├─ docker:index:RemoteImage  nginx-image-grupo01
- +   └─ docker:index:Container    container-grupo01     create
-
-Outputs:
-  ~ container_id: "<container_id>" => output<string>
-
-Resources:
-    + 1 to create
-    3 unchanged
-```
-
-**Paso 4 – Reconciliación:**
-
-```text
-$ pulumi up --refresh --yes
-...
- +   └─ docker:index:Container    container-grupo01     created (1s)
-
-Resources:
-    + 1 created
-    3 unchanged
-```
-
-**Interpretación:** Pulumi, por defecto, compara el programa contra **su estado guardado**, no contra la infraestructura real. Por eso `pulumi preview` sin bandera no ve el borrado. Con `--refresh`, primero consulta la API de Docker, actualiza el estado (el contenedor desaparece de él) y luego calcula el *diff*, que ahora sí propone crear el contenedor.
+![driftPulumi](driftPulumi.png)
 
 ### 2.3 Comparación del comportamiento
 
@@ -225,7 +93,6 @@ Resources:
 ```text
 $ cd terraform && terraform destroy -auto-approve
 ```
-
 ![TerraformDestroy](terraformDestroy.png)
 
 ```
@@ -233,8 +100,6 @@ $ cd ../pulumi && pulumi destroy --yes
 ```
 
 ![pulumiDestroy](pulumiDestroy.png)
-
-
 
 Ninguna de las dos herramientas dejó contenedores ni redes huérfanas. La imagen `nginx:1.27-alpine` permanece en el host porque ambas la declaran con `keep_locally = true`, lo cual es intencional para no volver a descargarla. Pulumi reporta 4 recursos porque cuenta el recurso `pulumi:pulumi:Stack`.
 
